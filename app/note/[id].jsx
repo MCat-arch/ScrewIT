@@ -1,4 +1,4 @@
-import { Pressable, SafeAreaView, Text, TextInput, View, StyleSheet } from "react-native";
+import { Pressable, SafeAreaView, TextInput, View, StyleSheet, Text } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
@@ -12,17 +12,18 @@ export default function NoteID() {
     const router = useRouter();
 
     useEffect(() => {
-        const fetchData = async (id) => {
+        console.log("Fetched id:", id); // Debug id value
+        const fetchData = async () => {
             try {
                 const jsonValue = await AsyncStorage.getItem("notes");
                 const storage = jsonValue != null ? JSON.parse(jsonValue) : [];
 
                 if (storage.length) {
-                    const mynote = storage.find(note => note.id.toString() === id);
+                    const mynote = storage.find(note => note.id.toString() === id.toString());
                     if (mynote) {
                         setNote(mynote);
-                        setTitle(mynote.title); // Set title from fetched note
-                        setContent(mynote.content); // Set content from fetched note
+                        setTitle(mynote.title); // Set the title from the fetched note
+                        setContent(mynote.content); // Set the content from the fetched note
                     }
                 }
             } catch (e) {
@@ -30,24 +31,25 @@ export default function NoteID() {
             }
         };
 
-        fetchData(id);
+        if (id) {
+            fetchData();
+        }
     }, [id]);
 
     const handleSave = async () => {
         try {
+            // Create a new note object with updated title and content
             const saveData = { ...note, title: title, content: content };
 
             const jsonValue = await AsyncStorage.getItem("notes");
             const storage = jsonValue != null ? JSON.parse(jsonValue) : [];
 
-            if (storage.length) {
-                const otherData = storage.filter(note => note.id !== saveData.id);
-                const allData = [...otherData, saveData];
-                await AsyncStorage.setItem("notes", JSON.stringify(allData));
-            } else {
-                await AsyncStorage.setItem("notes", JSON.stringify([saveData]));
-            }
+            // Filter out the old note and add the updated note
+            const otherData = storage.filter(n => n.id !== saveData.id);
+            const allData = [...otherData, saveData];
 
+            // Save the updated notes back to AsyncStorage
+            await AsyncStorage.setItem("notes", JSON.stringify(allData));
             router.push(`/`); // Navigate back to the main screen
         } catch (e) {
             console.error(e);
@@ -55,7 +57,7 @@ export default function NoteID() {
     };
 
     const handleClose = () => {
-        router.push(`/`); // Navigate back to the main screen
+        router.push(`/(tabs)/notes`); // Navigate back to the main screen
     };
 
     return (
@@ -66,16 +68,16 @@ export default function NoteID() {
                     maxLength={30}
                     placeholder="Edit Title"
                     placeholderTextColor="grey"
-                    value={title}
-                    onChangeText={setTitle} // Use onChangeText
+                    value={title} // Display the current title
+                    onChangeText={setTitle} // Update title state
                 />
                 <TextInput
                     style={styles.inputContent}
                     maxLength={100}
                     placeholder="Edit Content"
                     placeholderTextColor="grey"
-                    value={content}
-                    onChangeText={setContent} // Use onChangeText
+                    value={content} // Display the current content
+                    onChangeText={setContent} // Update content state
                 />
             </View>
             <View style={styles.buttonContainer}>
@@ -114,7 +116,7 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         flexDirection: 'row',
-        justifyContent: 'space -between',
+        justifyContent: 'space-between', // Fixed spacing issue
         marginTop: 20,
     },
     button: {

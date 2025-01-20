@@ -11,7 +11,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+export default function TabsLayout() {
   const colorScheme = Appearance.getColorScheme()
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
   const [loaded] = useFonts({
@@ -29,14 +29,6 @@ export default function RootLayout() {
   }
 
   return (
-    // <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-    //   <Stack>
-    //     <Stack.Screen name="(note)" options={{ headerShown: false }} />
-        
-    //     <Stack.Screen name="+not-found" />
-    //   </Stack>
-    //   <StatusBar style="auto" />
-    // </ThemeProvider>
       <Tabs screenOptions={{ headerStyle: { backgroundColor: theme.headerBackground }, headerTintColor: theme.text, headerShadowVisible: false }}>
         <Tabs.Screen 
         name="index" 
@@ -56,8 +48,8 @@ export default function RootLayout() {
             <MaterialCommunityIcons name="draw" size={24} color="black" />
           ),
          }} />
-        <Tabs.Screen name="+not-found" options={{ headerShown: false }} />
-        <Stack.Screen name="list/[id]" options={{ headerShown: true, title: 'Note Detail' }} />
+        {/* <Tabs.Screen name="+not-found" options={{ headerShown: false }} />
+        <Stack.Screen name="list/[id]" options={{ headerShown: true, title: 'Note Detail' }} /> */}
       </Tabs>
       
       

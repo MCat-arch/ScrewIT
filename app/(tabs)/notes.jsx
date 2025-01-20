@@ -86,7 +86,7 @@ function Notes() {
   }
 
   const handleNote = (id) =>{
-    router.push(`/list/${id}`);
+    router.push(`/note/${id}`);
   }
 
   return (

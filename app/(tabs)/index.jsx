@@ -7,8 +7,9 @@ import {
   ImageBackground,
   TextInput,
   Button,
-  Alert,
   TouchableOpacity,
+  FlatList,
+  Pressable,
 } from 'react-native';
 
 //import { Inter_500Medium, useFonts } from "@expo-google-fonts/inter";
@@ -16,6 +17,8 @@ import images from '@/constants/images';
 import { data } from '@/data/notes'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { ListView } from 'react-native';
 
 // Path ke file JSON di storage lokal
 const categories = [
@@ -27,10 +30,21 @@ const categories = [
 ];
 
 export default function App() {
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('joy');
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [note, setNote] = useState([])
+  const [note, setNote] = useState([]);
+  const [doDont, setdoDont] = useState({
+    joy: [],
+    sad: [],
+    anger: [],
+    fear: [],
+    disgust: []
+  });
+  const [newDoItem, setDoItem] = useState('')
+  const [newDontItem, setDontItem] = useState('')
+  const [showDoInput, setShowDoInput] = useState(false); // State to control Do input visibility
+  const [showDontInput, setShowDontInput] = useState(false);
 
   
   useEffect(() =>{
@@ -60,10 +74,32 @@ export default function App() {
     addStorage()
   }, [note])
 
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem("doDontData");
+        if (jsonValue) {
+          setdoDont(JSON.parse(jsonValue));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadData();
+  }, []);  
 
-  // if(!loaded &&!error){
-  //   return null
-  // }
+  useEffect(() => {
+    const saveData = async () => {
+      try {
+        const jsonValue = JSON.stringify(doDont);
+        await AsyncStorage.setItem("doDontData", jsonValue);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    saveData();
+  }, [doDont]); // Runs whenever doDont changes
+
 
   const addEmo = () =>{
     if(content.trim()){
@@ -75,50 +111,143 @@ export default function App() {
     }
   };
 
+  const addDoItem = () => {
+    if(newDoItem.trim()){
+      setdoDont(prev => ({
+        ...prev,[category]: [...prev[category], {id: Date.now(), do: newDoItem}]
+      }));
+      setDoItem('');
+      setShowDoInput(false)
+    }
+  }
+
+  const addDontItem = () =>{
+
+    if(newDontItem.trim()){
+      setdoDont(prev =>({
+        ...prev, [category]: [...prev[category], {id:Date.now(), dont: newDontItem}]
+      }));
+      setDontItem('')
+      setShowDontInput(false)
+    }
+  }
+
+  const removeDoItem = (id) =>{
+    setdoDont(prev => ({
+      ...prev, [category]: [...prev[category].filter(item =>item.id != id)]
+    }))
+  }
+
+  const removeDontItem = (id) => {
+    setdoDont(prev =>({
+      ...prev,[category]: [...prev[category].filter(item => item.id != id)]
+    }))
+  }
+
+  const renderDoItem = ({item}) =>{
+    return(
+    <View style={styles.ListItemContainer}>
+      <Pressable
+      onLongPress={() =>{removeDoItem(item.id)}}
+      >
+      <Text style={styles.ListItem}>{item.do}</Text>
+      </Pressable>
+    </View>
+    )
+  }
+  const renderDontItem = ({item}) =>{
+    return(
+    <View style={styles.ListItemContainer}>
+      <Pressable
+      onLongPress={() => {removeDontItem(item.id)}}
+      >
+      <Text style={styles.ListItem}>{item.dont}</Text>
+      </Pressable>
+    </View>
+    )
+  }
+
+  const renderCategoryContent = () => {
+    return (
+      <View style={styles.categoryContent}>
+        <View style={styles.textContainer}>
+          <Text style={styles.heading}>I am {category}</Text>
+          <Text style={styles.text}>Why am I {category} now?</Text>
+        </View>
   
-  // Fungsi untuk membaca data JSON
-  // const readNotes = async () => {
-  //   try {
-  //     const fileExists = await FileSystem.getInfoAsync(NOTES_FILE_PATH);
-  //     if (fileExists.exists) {
-  //       const fileContent = await FileSystem.readAsStringAsync(NOTES_FILE_PATH);
-  //       return JSON.parse(fileContent);
-  //     }
-  //     return [];
-  //   } catch (error) {
-  //     Alert.alert('Error', 'Failed to read notes.');
-  //     console.error(error);
-  //     return [];
-  //   }
-  // };
-
-  // // Fungsi untuk menambahkan catatan baru
-  // const addNote = async () => {
-  //   if (!title || !content || !category) {
-  //     Alert.alert('Error', 'Please fill all fields.');
-  //     return;
-  //   }
-
-  //   const newNote = {
-  //     id: Date.now(),
-  //     category,
-  //     title,
-  //     content,
-  //   };
-
-  //   try {
-  //     const notes = await readNotes();
-  //     notes.push(newNote);
-  //     await FileSystem.writeAsStringAsync(NOTES_FILE_PATH, JSON.stringify(notes));
-  //     Alert.alert('Success', 'Note added successfully!');
-  //     setCategory('');
-  //     setTitle('');
-  //     setContent('');
-  //   } catch (error) {
-  //     Alert.alert('Error', 'Failed to save note.');
-  //     console.error(error);
-  //   }
-  // };
+        <TextInput
+          style={styles.input}
+          placeholder="Title"
+          placeholderTextColor="#ccc"
+          onChangeText={setTitle}
+          value={title}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Content"
+          placeholderTextColor="#ccc"
+          onChangeText={setContent}
+          value={content}
+          multiline
+        />
+        <Button title="Add Note" onPress={addEmo} />
+        
+        <Text style={styles.title}>Guidelines: Things to Do and Not to Do</Text>
+        <View style={styles.explanationContainer}>
+        <View style={styles.doDontContainer}>
+          <View style={styles.do}>
+          <Text style={styles.listTitle}>Do</Text>
+            <FlatList
+              data={doDont[category].filter(item => item.do)}
+              renderItem={renderDoItem}
+              keyExtractor={(item) => item.id.toString()}
+            />
+            <Pressable onPress={() => setShowDoInput(!showDoInput)}>
+              <FontAwesome6 name="add" size={24} color="black" />
+            </Pressable>
+            {showDoInput && (
+              <View>
+                <TextInput
+                  style={styles.input}
+                  placeholder='Add Do'
+                  placeholderTextColor="#ccc"
+                  onChangeText={setDoItem}
+                  value={newDoItem}
+                />
+                <Button title='Submit' onPress={addDoItem} />
+              </View>
+            )}
+          </View>
+  
+          <View style={styles.dont}>
+          <Text style={styles.listTitle}>Dont</Text>
+            <FlatList
+              data={doDont[category].filter(item => item.dont)}
+              renderItem={renderDontItem}
+              keyExtractor={(item) => item.id.toString()}
+            />
+            <Pressable onPress={() => setShowDontInput(!showDontInput)}>
+              <FontAwesome6 name="add" size={24} color="black" />
+            </Pressable>
+            {showDontInput && (
+              <View >
+                <TextInput
+                  style={styles.input}
+                  placeholder='Add Dont'
+                  placeholderTextColor="#ccc"
+                  onChangeText={setDontItem}
+                  value={newDontItem}
+                />
+                <Button title='Submit' onPress={addDontItem} />
+              </View>
+            )}
+          </View>
+        </View>
+        </View>
+      </View>
+    );
+  };
+  
 
   return (
     <SafeAreaView>
@@ -128,10 +257,6 @@ export default function App() {
         style={styles.background}
       >
         <View style={styles.content}>
-          <View style={styles.textContainer}>
-            <Text style={styles.heading}>Add a Note</Text>
-            <Text style={styles.text}>Fill in the details below</Text>
-          </View>
 
           {/* Stack Image for Category */}
           <View style={styles.categoryContainer}>
@@ -143,30 +268,19 @@ export default function App() {
                   styles.categoryImageContainer,
                   category === cat.category && styles.selectedCategory,
                 ]}
+
               >
                 <Image source={cat.image} style={styles.categoryImage} />
                 <Text style={styles.categoryLabel}>{cat.category}</Text>
               </TouchableOpacity>
             ))}
+            
           </View>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Title"
-              placeholderTextColor="#ccc"
-              onChangeText={setTitle}
-              value={title}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Content"
-              placeholderTextColor="#ccc"
-              onChangeText={setContent}
-              value={content}
-              multiline
-            />
-            <Button title="Add Note" onPress={addEmo} />
+            {/* Render content based on selected category */}
+            {category && renderCategoryContent()}
+
           </View>
         </View>
       </ImageBackground>
@@ -192,6 +306,9 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     alignItems: 'center',
+    marginBottom:30,
+    marginTop:0,
+
   },
   heading: {
     fontSize: 28,
@@ -242,4 +359,79 @@ const styles = StyleSheet.create({
     color: 'black',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
+  explanationContainer: {
+    marginTop: 20,
+  },
+  explanationInput: {
+    height: 80,
+    width: '100%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    marginBottom: 20,
+    color: '#333',
+    backgroundColor: '#fff',
+  },
+  doDontContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  do: {
+    flex: 1,
+    marginRight: 10,
+    padding: 10,
+    backgroundColor: '#e0f7fa',
+    borderRadius: 8,
+    elevation: 2,
+  },
+  dont: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: '#ffebee',
+    borderRadius: 8,
+    elevation: 2,
+  },
+  doDontTitle: {
+    fontWeight: 'bold',
+  },
+  doDontContent: {
+    marginTop: 5,
+  },
+
+  ListItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    backgroundColor: '#f9f9f9',
+    marginVertical: 5,
+    borderRadius: 8,
+    elevation: 1,
+  },
+  ListItem: {
+    fontSize: 16,
+    color: 'black',
+  },
+  title: {
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+    marginTop:30,
+    color: "#333",
+  },
+  listTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginVertical: 10,
+    color: "#555",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  
 });
+
